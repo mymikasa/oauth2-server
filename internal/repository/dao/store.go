@@ -7,6 +7,7 @@ type Store interface {
 	ClientStore
 	AuthCodeStore
 	TokenStore
+	WithTx(ctx context.Context, fn func(store Store) error) error
 }
 
 type UserStore interface {
@@ -44,6 +45,8 @@ type AuthCodeStore interface {
 	SaveAuthCode(ctx context.Context, code *AuthorizationCode) error
 	// GetAuthCode 获取授权码
 	GetAuthCode(ctx context.Context, code string) (*AuthorizationCode, error)
+	// ConsumeAuthCode 原子消费授权码，仅未使用且未过期授权码可消费成功
+	ConsumeAuthCode(ctx context.Context, code string) (*AuthorizationCode, error)
 	// MarkAuthCodeAsUsed 标记授权码为已使用
 	MarkAuthCodeAsUsed(ctx context.Context, code string) error
 	// DeleteAuthCode 删除授权码
@@ -62,6 +65,7 @@ type TokenStore interface {
 	// Refresh Token operations
 	SaveRefreshToken(ctx context.Context, token *RefreshToken) error
 	GetRefreshToken(ctx context.Context, token string) (*RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, token string) error
 	DeleteRefreshToken(ctx context.Context, token string) error
 	DeleteExpiredRefreshTokens(ctx context.Context) (int, error)
 }

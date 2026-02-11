@@ -11,6 +11,7 @@ import (
 type AuthCodeRepository interface {
 	SaveAuthCode(ctx context.Context, code *domain.AuthorizationCode) error
 	GetAuthCode(ctx context.Context, code string) (*domain.AuthorizationCode, error)
+	ConsumeAuthCode(ctx context.Context, code string) (*domain.AuthorizationCode, error)
 	MarkAuthCodeAsUsed(ctx context.Context, code string) error
 	DeleteAuthCode(ctx context.Context, code string) error
 	DeleteExpiredAuthCodes(ctx context.Context) (int, error)
@@ -34,6 +35,14 @@ func (r *authCodeRepository) SaveAuthCode(ctx context.Context, code *domain.Auth
 
 func (r *authCodeRepository) GetAuthCode(ctx context.Context, code string) (*domain.AuthorizationCode, error) {
 	daoCode, err := r.store.GetAuthCode(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	return r.daoToDomain(daoCode), nil
+}
+
+func (r *authCodeRepository) ConsumeAuthCode(ctx context.Context, code string) (*domain.AuthorizationCode, error) {
+	daoCode, err := r.store.ConsumeAuthCode(ctx, code)
 	if err != nil {
 		return nil, err
 	}
@@ -67,15 +76,17 @@ func (r *authCodeRepository) domainToDAO(code *domain.AuthorizationCode) *dao.Au
 		return nil
 	}
 	return &dao.AuthorizationCode{
-		Code:        code.Code,
-		ClientId:    code.ClientId,
-		UserId:      code.UserId,
-		RedirectUri: code.RedirectUri,
-		Scope:       code.Scope,
-		State:       code.State,
-		ExpiresAt:   code.ExpiresAt,
-		Used:        code.Used,
-		CreatedAt:   code.CreatedAt,
+		Code:                code.Code,
+		ClientId:            code.ClientId,
+		UserId:              code.UserId,
+		RedirectUri:         code.RedirectUri,
+		Scope:               code.Scope,
+		State:               code.State,
+		CodeChallenge:       code.CodeChallenge,
+		CodeChallengeMethod: code.CodeChallengeMethod,
+		ExpiresAt:           code.ExpiresAt,
+		Used:                code.Used,
+		CreatedAt:           code.CreatedAt,
 	}
 }
 
@@ -84,14 +95,16 @@ func (r *authCodeRepository) daoToDomain(code *dao.AuthorizationCode) *domain.Au
 		return nil
 	}
 	return &domain.AuthorizationCode{
-		Code:        code.Code,
-		ClientId:    code.ClientId,
-		UserId:      code.UserId,
-		RedirectUri: code.RedirectUri,
-		Scope:       code.Scope,
-		State:       code.State,
-		ExpiresAt:   code.ExpiresAt,
-		CreatedAt:   code.CreatedAt,
-		Used:        code.Used,
+		Code:                code.Code,
+		ClientId:            code.ClientId,
+		UserId:              code.UserId,
+		RedirectUri:         code.RedirectUri,
+		Scope:               code.Scope,
+		State:               code.State,
+		CodeChallenge:       code.CodeChallenge,
+		CodeChallengeMethod: code.CodeChallengeMethod,
+		ExpiresAt:           code.ExpiresAt,
+		CreatedAt:           code.CreatedAt,
+		Used:                code.Used,
 	}
 }

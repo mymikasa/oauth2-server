@@ -16,6 +16,7 @@ type TokenRepository interface {
 
 	SaveRefreshToken(ctx context.Context, token *domain.RefreshToken) error
 	GetRefreshToken(ctx context.Context, token string) (*domain.RefreshToken, error)
+	RevokeRefreshToken(ctx context.Context, token string) error
 	DeleteRefreshToken(ctx context.Context, token string) error
 	DeleteExpiredRefreshTokens(ctx context.Context) (int, error)
 }
@@ -73,6 +74,13 @@ func (r *tokenRepository) GetRefreshToken(ctx context.Context, token string) (*d
 		return nil, err
 	}
 	return r.daoToRefreshToken(daoToken), nil
+}
+
+func (r *tokenRepository) RevokeRefreshToken(ctx context.Context, token string) error {
+	if err := r.store.RevokeRefreshToken(ctx, token); err != nil {
+		return fmt.Errorf("revoke refresh token failed: %w", err)
+	}
+	return nil
 }
 
 func (r *tokenRepository) DeleteRefreshToken(ctx context.Context, token string) error {

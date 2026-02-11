@@ -115,6 +115,35 @@ func (s *tokenStore) GetRefreshToken(ctx context.Context, token string) (*Refres
 	return &refreshToken, nil
 }
 
+func (s *tokenStore) RevokeRefreshToken(ctx context.Context, token string) error {
+	result := s.db.WithContext(ctx).
+		Model(&RefreshToken{}).
+		Where("token = ? AND revoked = ?", token, false).
+		Update("revoked", true)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected > 0 {
+		return nil
+	}
+
+	var refreshToken RefreshToken
+	err := s.db.WithContext(ctx).
+		Unscoped().
+		Where("token = ?", token).
+		First(&refreshToken).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return ErrRefreshTokenNotFound
+		}
+		return err
+	}
+	if refreshToken.Revoked {
+		return ErrRefreshTokenRevoked
+	}
+	return nil
+}
+
 func (s *tokenStore) DeleteRefreshToken(ctx context.Context, token string) error {
 	result := s.db.WithContext(ctx).Where("token = ?", token).Delete(&RefreshToken{})
 	if result.Error != nil {
